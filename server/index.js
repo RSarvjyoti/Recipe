@@ -11,7 +11,7 @@ const DB_URL = process.env.DB_URL
 app.use(cors());
 app.use(express.json());
 
-app.use('/recipe', recipeRoute);
+app.use('/api/recipe', recipeRoute);
 
 app.get('/', (req, res) => {
     res.send("This is a home route...");
