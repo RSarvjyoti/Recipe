@@ -1,1 +1,5 @@
 {"level":"info","message":{"ip":"::ffff:127.0.0.1","method":"GET","timestamp":"2025-03-06T10:47:57.351Z","url":"/recipe/read"},"timestamp":"2025-03-06T10:47:57.353Z"}
+{"level":"info","message":{"ip":"::1","method":"POST","timestamp":"2025-03-06T13:55:45.642Z","url":"/api/recipe/create"},"timestamp":"2025-03-06T13:55:45.643Z"}
+{"level":"info","message":{"ip":"::1","method":"POST","timestamp":"2025-03-06T13:56:34.112Z","url":"/api/recipe/create"},"timestamp":"2025-03-06T13:56:34.112Z"}
+{"level":"info","message":{"ip":"::1","method":"POST","timestamp":"2025-03-06T13:58:17.707Z","url":"/api/recipe/create"},"timestamp":"2025-03-06T13:58:17.707Z"}
+{"level":"info","message":{"ip":"::1","method":"POST","timestamp":"2025-03-06T14:02:50.764Z","url":"/api/recipe/create"},"timestamp":"2025-03-06T14:02:50.764Z"}
