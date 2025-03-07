@@ -3,21 +3,6 @@ import axios from "axios";
 import { BiDish } from "react-icons/bi";
 import { MdCategory, MdLocalFireDepartment } from "react-icons/md";
 import { AiOutlineLoading3Quarters, AiOutlineClose } from "react-icons/ai";
-import { 
-  DndContext, 
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
 
 const ShowAllItems = () => {
   const [data, setData] = useState([]);
@@ -30,13 +15,6 @@ const ShowAllItems = () => {
   const [sortDirection, setSortDirection] = useState('asc');
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   const readData = async () => {
     try {
@@ -111,19 +89,6 @@ const ShowAllItems = () => {
     setSortField(field);
   };
 
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    
-    if (active.id !== over.id) {
-      setData((items) => {
-        const oldIndex = items.findIndex(item => item._id === active.id);
-        const newIndex = items.findIndex(item => item._id === over.id);
-        
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
-
   const handleSurpriseMe = () => {
     if (data.length > 0) {
       const randomIndex = Math.floor(Math.random() * data.length);
@@ -140,51 +105,47 @@ const ShowAllItems = () => {
   const currentItems = data.slice(indexOfFirstItem, indexOfLastItem);
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  const SortableRecipeCard = ({ recipe }) => {
-    const {
-      attributes,
-      listeners,
-      setNodeRef,
-      transform,
-      transition,
-    } = useSortable({ id: recipe._id });
-
-    const style = {
-      ...styles.recipeCard,
-      transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-      transition,
-    };
-
-    return (
-      <div ref={setNodeRef} style={style}>
-        <div {...attributes} {...listeners} style={styles.dragHandle}>≡</div>
-        <div onClick={() => handleCardClick(recipe)}>
-          <div style={styles.imageContainer}>
-            <img src={recipe.image} alt={recipe.title} style={styles.cardImg} />
+  const RecipeCard = ({ recipe }) => (
+    <div style={styles.recipeCard} onClick={() => handleCardClick(recipe)}>
+      <div style={styles.imageContainer}>
+        <img src={recipe.image} alt={recipe.title} style={styles.cardImg} />
+      </div>
+      <div style={styles.cardBody}>
+        <div style={styles.titleContainer}>
+          <BiDish style={styles.titleIcon} />
+          <h3 style={styles.title}>{recipe.title}</h3>
+        </div>
+        <p style={styles.desc}>{recipe.dec}</p>
+        <div style={styles.infoContainer}>
+          <div style={styles.infoItem}>
+            <MdCategory style={styles.categoryIcon} />
+            <span style={styles.label}>Category:</span>
+            <span style={styles.value}>{recipe.category}</span>
           </div>
-          <div style={styles.cardBody}>
-            <div style={styles.titleContainer}>
-              <BiDish style={styles.titleIcon} />
-              <h3 style={styles.title}>{recipe.title}</h3>
-            </div>
-            <p style={styles.desc}>{recipe.dec}</p>
-            <div style={styles.infoContainer}>
-              <div style={styles.infoItem}>
-                <MdCategory style={styles.categoryIcon} />
-                <span style={styles.label}>Category:</span>
-                <span style={styles.value}>{recipe.category}</span>
-              </div>
-              <div style={styles.infoItem}>
-                <MdLocalFireDepartment style={styles.caloriesIcon} />
-                <span style={styles.label}>Calories:</span>
-                <span style={styles.value}>{recipe.calories}</span>
-              </div>
-            </div>
+          <div style={styles.infoItem}>
+            <MdLocalFireDepartment style={styles.caloriesIcon} />
+            <span style={styles.label}>Calories:</span>
+            <span style={styles.value}>{recipe.calories}</span>
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+
+  const SkeletonCard = () => (
+    <div style={styles.skeletonCard}>
+      <div style={styles.skeletonImage}></div>
+      <div style={styles.skeletonBody}>
+        <div style={styles.skeletonTitle}></div>
+        <div style={styles.skeletonText}></div>
+        <div style={styles.skeletonText}></div>
+        <div style={styles.skeletonInfo}>
+          <div style={styles.skeletonInfoItem}></div>
+          <div style={styles.skeletonInfoItem}></div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div style={styles.container}>
@@ -223,25 +184,11 @@ const ShowAllItems = () => {
       )}
       
       {!loading && !error && (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext 
-            items={currentItems.map(item => item._id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div style={styles.recipeContainer}>
-              {currentItems.map((recipe) => (
-                <SortableRecipeCard
-                  key={recipe._id}
-                  recipe={recipe}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <div style={styles.recipeContainer}>
+          {currentItems.map((recipe) => (
+            <RecipeCard key={recipe._id} recipe={recipe} />
+          ))}
+        </div>
       )}
 
       <div style={styles.pagination}>
@@ -368,22 +315,6 @@ const ShowAllItems = () => {
     </div>
   );
 };
-
-const SkeletonCard = () => (
-  <div style={styles.skeletonCard}>
-    <div style={styles.skeletonImage}></div>
-    <div style={styles.skeletonBody}>
-      <div style={styles.skeletonTitle}></div>
-      <div style={styles.skeletonText}></div>
-      <div style={styles.skeletonText}></div>
-      <div style={styles.skeletonInfo}>
-        <div style={styles.skeletonInfoItem}></div>
-        <div style={styles.skeletonInfoItem}></div>
-      </div>
-    </div>
-  </div>
-);
-
 const styles = {
   container: {
     padding: '20px',
