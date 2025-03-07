@@ -33,7 +33,7 @@
 ## 📸 Screenshots  
 (Add screenshots of your application here to enhance readability and showcase UI)
 
----![screencapture-recipe-9nud-vercel-app-2025-03-07-13_56_08](https://github.com/user-attachments/assets/36c3e27d-14d6-4ffa-95ba-887650eead99)
+![screencapture-recipe-9nud-vercel-app-2025-03-07-13_56_08](https://github.com/user-attachments/assets/36c3e27d-14d6-4ffa-95ba-887650eead99)
 
 ![screencapture-recipe-9nud-vercel-app-2025-03-07-13_56_38](https://github.com/user-attachments/assets/a81615b2-4605-4bae-ba55-ef39165ccbfc)
 
