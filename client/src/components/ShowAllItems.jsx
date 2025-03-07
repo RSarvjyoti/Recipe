@@ -3,10 +3,23 @@ import axios from "axios";
 import { BiDish } from "react-icons/bi";
 import { MdCategory, MdLocalFireDepartment } from "react-icons/md";
 import { AiOutlineLoading3Quarters, AiOutlineClose } from "react-icons/ai";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { 
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 const ShowAllItems = () => {
-  
   const [data, setData] = useState([]);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -17,7 +30,13 @@ const ShowAllItems = () => {
   const [sortDirection, setSortDirection] = useState('asc');
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState(null);
-  const [randomRecipe, setRandomRecipe] = useState(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const readData = async () => {
     try {
@@ -92,20 +111,18 @@ const ShowAllItems = () => {
     setSortField(field);
   };
 
-  const handleDragEnd = (result) => {
-    if (!result.destination) return;
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
     
-    const items = Array.from(data);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    
-    setData(items);
+    if (active.id !== over.id) {
+      setData((items) => {
+        const oldIndex = items.findIndex(item => item._id === active.id);
+        const newIndex = items.findIndex(item => item._id === over.id);
+        
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
-
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = data.slice(indexOfFirstItem, indexOfLastItem);
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const handleSurpriseMe = () => {
     if (data.length > 0) {
@@ -118,48 +135,78 @@ const ShowAllItems = () => {
     readData();
   }, [sortField, sortDirection]);
 
-  const SkeletonCard = () => (
-    <div style={styles.skeletonCard}>
-      <div style={styles.skeletonImage}></div>
-      <div style={styles.skeletonBody}>
-        <div style={styles.skeletonTitle}></div>
-        <div style={styles.skeletonText}></div>
-        <div style={styles.skeletonText}></div>
-        <div style={styles.skeletonInfo}>
-          <div style={styles.skeletonInfoItem}></div>
-          <div style={styles.skeletonInfoItem}></div>
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = data.slice(indexOfFirstItem, indexOfLastItem);
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  const SortableRecipeCard = ({ recipe }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+    } = useSortable({ id: recipe._id });
+
+    const style = {
+      ...styles.recipeCard,
+      transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+      transition,
+    };
+
+    return (
+      <div ref={setNodeRef} style={style}>
+        <div {...attributes} {...listeners} style={styles.dragHandle}>≡</div>
+        <div onClick={() => handleCardClick(recipe)}>
+          <div style={styles.imageContainer}>
+            <img src={recipe.image} alt={recipe.title} style={styles.cardImg} />
+          </div>
+          <div style={styles.cardBody}>
+            <div style={styles.titleContainer}>
+              <BiDish style={styles.titleIcon} />
+              <h3 style={styles.title}>{recipe.title}</h3>
+            </div>
+            <p style={styles.desc}>{recipe.dec}</p>
+            <div style={styles.infoContainer}>
+              <div style={styles.infoItem}>
+                <MdCategory style={styles.categoryIcon} />
+                <span style={styles.label}>Category:</span>
+                <span style={styles.value}>{recipe.category}</span>
+              </div>
+              <div style={styles.infoItem}>
+                <MdLocalFireDepartment style={styles.caloriesIcon} />
+                <span style={styles.label}>Calories:</span>
+                <span style={styles.value}>{recipe.calories}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div style={styles.container}>
-     <div style={styles.sortingControls}>
-  <button 
-    style={styles.button}
-    onClick={() => handleSort('title')}
-  >
-    Sort by Title {sortField === 'title' && (sortDirection === 'asc' ? '↑' : '↓')}
-  </button>
-  <button 
-    style={styles.button}
-    onClick={() => handleSort('calories')}
-  >
-    Sort by Calories {sortField === 'calories' && (sortDirection === 'asc' ? '↑' : '↓')}
-  </button>
-  <button 
-    style={{
-      ...styles.button,
-      backgroundColor: '#ff6b6b',
-      color: '#fff',
-      border: 'none',
-    }} 
-    onClick={handleSurpriseMe}
-  >
-    Surprise Me! 🎲
-  </button>
-</div>
+      <div style={styles.sortingControls}>
+        <button style={styles.button} onClick={() => handleSort('title')}>
+          Sort by Title {sortField === 'title' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </button>
+        <button style={styles.button} onClick={() => handleSort('calories')}>
+          Sort by Calories {sortField === 'calories' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </button>
+        <button 
+          style={{
+            ...styles.button,
+            backgroundColor: '#ff6b6b',
+            color: '#fff',
+            border: 'none',
+          }} 
+          onClick={handleSurpriseMe}
+        >
+          Surprise Me! 🎲
+        </button>
+      </div>
 
       {loading && (
         <div style={styles.recipeContainer}>
@@ -174,67 +221,29 @@ const ShowAllItems = () => {
           Failed to load recipes! ❌
         </p>
       )}
+      
       {!loading && !error && (
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="recipes" isDropDisabled={false}>
-            {(provided) => (
-              <div 
-                style={styles.recipeContainer}
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-              >
-                {currentItems.map((recipe, index) => (
-                  <Draggable 
-                    key={recipe._id}
-                    draggableId={recipe._id.toString()}
-                    index={index}
-                  >
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        style={{
-                          ...styles.recipeCard,
-                          ...provided.draggableProps.style,
-                          ...(snapshot.isDragging ? styles.dragging : {})
-                        }}
-                      >
-                        <div {...provided.dragHandleProps} style={styles.dragHandle}>≡</div>
-                        <div onClick={() => handleCardClick(recipe)}>
-                          <div style={styles.imageContainer}>
-                            <img src={recipe.image} alt={recipe.title} style={styles.cardImg} />
-                          </div>
-                          <div style={styles.cardBody}>
-                            <div style={styles.titleContainer}>
-                              <BiDish style={styles.titleIcon} />
-                              <h3 style={styles.title}>{recipe.title}</h3>
-                            </div>
-                            <p style={styles.desc}>{recipe.dec}</p>
-                            <div style={styles.infoContainer}>
-                              <div style={styles.infoItem}>
-                                <MdCategory style={styles.categoryIcon} />
-                                <span style={styles.label}>Category:</span>
-                                <span style={styles.value}>{recipe.category}</span>
-                              </div>
-                              <div style={styles.infoItem}>
-                                <MdLocalFireDepartment style={styles.caloriesIcon} />
-                                <span style={styles.label}>Calories:</span>
-                                <span style={styles.value}>{recipe.calories}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
-      )} 
-    
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext 
+            items={currentItems.map(item => item._id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div style={styles.recipeContainer}>
+              {currentItems.map((recipe) => (
+                <SortableRecipeCard
+                  key={recipe._id}
+                  recipe={recipe}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
+
       <div style={styles.pagination}>
         {Array.from({ length: Math.ceil(data.length / itemsPerPage) }).map((_, index) => (
           <button
@@ -251,7 +260,6 @@ const ShowAllItems = () => {
         ))}
       </div>
 
-      
       {selectedRecipe && (
         <div style={styles.modalOverlay} onClick={closeModal}>
           <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
@@ -360,6 +368,21 @@ const ShowAllItems = () => {
     </div>
   );
 };
+
+const SkeletonCard = () => (
+  <div style={styles.skeletonCard}>
+    <div style={styles.skeletonImage}></div>
+    <div style={styles.skeletonBody}>
+      <div style={styles.skeletonTitle}></div>
+      <div style={styles.skeletonText}></div>
+      <div style={styles.skeletonText}></div>
+      <div style={styles.skeletonInfo}>
+        <div style={styles.skeletonInfoItem}></div>
+        <div style={styles.skeletonInfoItem}></div>
+      </div>
+    </div>
+  </div>
+);
 
 const styles = {
   container: {
